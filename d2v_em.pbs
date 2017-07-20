@@ -1,0 +1,14 @@
+#!/bin/bash
+#    Begin PBS directives
+#PBS -A csc229
+#PBS -N out_model1.0_100NODES
+#PBS -j oe
+#PBS -l walltime=01:30:00,nodes=100
+#PBS -l gres=atlas1%atlas2
+#    End PBS directives and begin shell commands
+module load r/3.3.2
+cd /lustre/atlas/proj-shared/csc229
+#cd $MEMBERWORK/csc229
+#date
+#export OMP_NUM_THREADS=16
+aprun -n 1170 Rscript d2v_em.r

@@ -1,0 +1,14 @@
+#!/bin/bash
+#    Begin PBS directives
+#PBS -A csc229
+#PBS -N d2vpkmeans_out
+#PBS -j oe
+#PBS -l walltime=02:00:00,nodes=1
+#PBS -l gres=atlas1%atlas2
+#    End PBS directives and begin shell commands
+module load r/3.3.2
+cd /lustre/atlas/proj-shared/csc229
+#cd $MEMBERWORK/csc229
+#date
+#export OMP_NUM_THREADS=16
+aprun -n 6 Rscript d2v_pkmeans.r 

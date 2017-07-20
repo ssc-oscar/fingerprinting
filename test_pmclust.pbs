@@ -1,0 +1,13 @@
+#!/bin/bash
+#    Begin PBS directives
+#PBS -A csc229
+#PBS -N test_out
+#PBS -j oe
+#PBS -l walltime=00:10:00,nodes=2
+#PBS -l gres=atlas1%atlas2
+#    End PBS directives and begin shell commands
+module load r/3.3.2
+cd $MEMBERWORK/csc229
+#date
+#export OMP_NUM_THREADS=16
+aprun -n 9 Rscript test_pmclust.R 
