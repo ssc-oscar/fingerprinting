@@ -586,6 +586,28 @@ for (i in 0:9){
 }
 fullP10=fullP10[-256224050];
 
+save(fullP1, fullP2, fullP3, fullP4, fullP5, fullP6, fullP7, fullP8, fullP9, fullP10, file = "/home/audris/rfmodelsC1FullP.RData");
+
+################################
+#do further refinement with Yuxia
+################################
+load("/home/audris/rfmodelsC1FullP.RData");
+fullP = cbind(fullP1,fullP2,fullP3,fullP4,fullP5,fullP6,fullP7,fullP8,fullP9,fullP1)
+agg = apply(fullP,1,sum);
+table(agg);
+
+       10        11        12        13        14        15        16        17 
+256192190       226       217       116        93        71       103       121 
+       18        19        20 
+      151       186     30575 
+
+sel = agg < 20 & agg > 10
+mismatch=data.frame(fr=pairsf$data1$a[pairsf$pairs$id1[sel]],to=pairsf$data1$a[pairsf$pairs$id2[sel]])
+mismatch=data.frame(fr=pairsf$data1$a[pairsf$pairs$id1[sel]],to=pairsf$data1$a[pairsf$pairs$id2[sel]],ad=pairsf$pairs$ad[sel],d2vSim=pairsf$pairs$d2vSim[sel],tdz=pairsf$pairs$tdz[sel])
+write.table(mismatch,"/home/audris/mismatch.csv",sep=";",quote=F)
+################################
+
+
 
 #try simpler models that can be applied on the entire universe
 rfCS = list();
@@ -1903,7 +1925,8 @@ calcMeas(n,pairsf$pairs[fullP7==2,1:2]);
            n          nid     nid+/nid           n+           n1 
 1.600700e+04 1.081500e+04 2.696255e-01 8.108000e+03 7.899000e+03 
 #look at the productivity, connectivity
-save(fullP1, fullP2, fullP3, fullP4, fullP5, fullP6, fullP7, fullP8, fullP9, fullP10, file = "/home/audris/rfmodelsC1FullP.RData");
+
+
 
 # Clumping/splitting
 
@@ -2191,6 +2214,50 @@ split -n l/4096 cprojects.as auth1/a.
 qsub r.pbs 
 ```
 
+#############
+Chris
+
+zcat as.11 > as.11.txt
+
+#Chris stuff
+n=4096
+0-1
+2-20
+21-320
+321-620
+621-920
+921-1220
+1221-1520
+1521-1820
+1821-2048
+
+
+#####
+Try shorter lists
+head -$(($n*438)) as.11.txt > as.11.txt.$(($n*438))
+
+
+#############
+Full
+echo $((16140709/320/16))
+3152.5
+
+fr=0
+to=1
+p=3152
+n=$(($p*16))
+rr=$(($p/2))
+mkdir  auth$n
+rm auth$n/a.*
+split -n r/$rr as.11.txt auth$n/a.
+mkdir ${n}_${fr}-$to/
+rm ${n}_${fr}-$to/*
+sed "s/__OUT__/${n}_${fr}-$to/;s/__FROM__/$fr/;s/__TO__/$to/;s/auth1/auth$n/;s/__READERS__/$rr/" tst.r > tst.${n}_${fr}-$to.r
+sed "s/tst.r/tst.${n}_${fr}-$to.r/;s/walltime=02:00/walltime=06:00/;s/nodes=2/nodes=$p/;s/THREADS=32/THREADS=$n/" r.pbs > r${n}_${fr}-$to.pbs
+qsub r${n}_${fr}-$to.pbs
+
+
+
 
     {'x-per-page': '99',
         'vary': 'Accept-Encoding, Origin',
@@ -2222,4 +2289,425 @@ qsub r.pbs
 
 
 
-    
+# do for Chris   
+#First fit the model
+pairsf <- readRDS("../MODELS_PHASE4/RDSFiles/full_pairs.RDS");
+pairs <- readRDS("../MODELS_PHASE5/match2345_pairs.RDS");
+
+pairs$pairs$im = as.factor(pairs$pairs$"is_match");
+vv = 1:dim(pairs$pairs)[1];
+eq= c(1817022,2620775,3198135,3823436,4923380,2469101,5117770,429508 ,1674130,2018882,2469100,
+     2863731,4667324,5063908,5351827,1674131 ,2566524,3924916,4669669,5028394,5066253,
+      1814677,3198134,3305223,4454519,4603843,3647564,3943395,4452175,4667325,1425379,2552916,
+       4452174,5026049,5030739,5115306,1814676,2021226,2550570);
+fr=c(1117,1771,2183,1632,2265,2265,1221, 666,1900,487,1053,1075,1085,1085,1207,1411,748, 1411, 1221, 1632, 1076, 1148, 748,  774,  775, 774, 1115, 1053, 981,  185, 1093, 1899, 2099, 373, 966, 1094, 184, 2100, 2144, 424, 425, 1450, 1228, 1116,  775, 1117, 1364, 774,  1086, 1900, 1118, 1227, 1227);
+to=c(1411, 666, 980,1085, 749, 748,487,1772,1365,1221,2160,1207,1632,1631,1076,1117,2264,1118, 486,  1086, 1207, 528, 2264, 1992, 1992, 775, 1409, 2161, 2183, 373, 1096, 1365, 1225, 184, 1619,1096, 373, 1225, 2255, 229, 230, 1683, 2099, 1410, 1991, 1410, 1899, 1991, 1631, 1364, 1410, 2100, 2099);
+for (i in c(1:length(fr))){
+ pairs$pairs$im[pairs$pairs$id1==fr[i]&pairs$pairs$id2==to[i]]=1;
+ pairs$pairs$im[pairs$pairs$id2==fr[i]&pairs$pairs$id1==to[i]]=1;
+}
+pp=pairs$pairs[eq,]
+pp=pp[pp$im==0,]
+for (i in c(1:length(pp$id1))){
+  pairs$pairs$im[pairs$pairs$id1==pp$id1[i]&pairs$pairs$id2==pp$id2[i]]=1;
+  pairs$pairs$im[pairs$pairs$id2==pp$id1[i]&pairs$pairs$id1==pp$id2[i]]=1;
+}
+
+frommtch = cbind(pairs$data1$a[pairs$pairs[pairs$pairs$im==1,"id1"]],pairs$data1$a[pairs$pairs[pairs$pairs$im==1,"id2"]]);
+frommtch = frommtch[frommtch[,1]!=frommtch[,2],];
+n=dim(pairs$data1)[1];
+idmatch = paste(pairs$pairs$id1,pairs$pairs$id2,sep=";");
+
+## zero out false (common names)
+cn = read.table("FreqNames200.csv", sep=',', header=T, colClasses="character")
+cfn = read.table("FreqFirstNames200.csv", sep=',', header=T, colClasses="character")
+cln = read.table("FreqLastNames200.csv", sep=',', header=T, colClasses="character")
+cun = read.table("FreqUsernames200.csv", sep=',', header=T, colClasses="character")
+ce = read.table("../MODELS_PHASE4/FreqEmail200.csv", sep=',', header=T, colClasses="character")
+
+
+library(data.table);
+frq = fread("/home/audris/as.11.txt",sep=";",quote="",colClasses="character", header=F, strip.white=F);
+names(frq) = c("un","n","fn","ln","e","a");
+frq$badn = match(unlist(frq$n), cn$n, nomatch=0)>0
+frq$badfn = match(unlist(frq$fn), cfn$fn, nomatch=0)>0
+frq$badln = match(unlist(frq$ln), cln$ln, nomatch=0)>0
+frq$badun = match(unlist(frq$un), cun$un, nomatch=0)>0
+frq$bade = match(unlist(frq$e), ce$e, nomatch=0)>0
+
+#namec <- table(frq$n)
+#emailc <- table(frq$e)
+lnamep <- table(frq$ln)
+fnamep <- table(frq$fn)
+unamep <- table(frq$un)
+pairs$data1$lnf = log10(1/lnamep[match(pairs$data1$ln,names(lnamep),nomatch=0)])
+pairs$data1$fnf = log10(1/fnamep[match(pairs$data1$fn,names(fnamep),nomatch=0)])
+pairs$data1$unf = log10(1/unamep[match(pairs$data1$un,names(unamep),nomatch=0)])
+pairs$pairs$fnf = as.vector(outer(pairs$data1$fnf, pairs$data1$fnf, "+"))
+pairs$pairs$lnf = as.vector(outer(pairs$data1$lnf, pairs$data1$lnf, "+"))
+pairs$pairs$unf = as.vector(outer(pairs$data1$unf, pairs$data1$unf, "+"))
+
+n=dim(pairsf$data1)[1];
+removeHom = function (zz){
+n=dim(zz$data1)[1];
+id = (1:n)[match(zz$data1$n, cn$n, nomatch=0)>0];
+zz$pairs$n[match(zz$pairs$id1, id, nomatch=0)>0] = 0;
+zz$pairs$n[match(zz$pairs$id2, id, nomatch=0)>0] = 0;
+zz$pairs$nf[match(zz$pairs$id1, id, nomatch=0)>0] = -20;
+zz$pairs$nf[match(zz$pairs$id2, id, nomatch=0)>0] = -20;
+
+id = (1:n)[match(zz$data1$fn, cfn$fn, nomatch=0)>0];
+zz$pairs$fn[match(zz$pairs$id1, id, nomatch=0)>0] = 0;
+zz$pairs$fn[match(zz$pairs$id2, id, nomatch=0)>0] = 0;
+zz$pairs$fn1f[match(zz$pairs$id1, id, nomatch=0)>0] = -20;
+zz$pairs$fn1[match(zz$pairs$id2, id, nomatch=0)>0] = -20;
+
+id = (1:n)[match(zz$data1$ln, cln$ln, nomatch=0)>0];
+zz$pairs$ln[match(zz$pairs$id1, id, nomatch=0)>0] = 0;
+zz$pairs$ln[match(zz$pairs$id2, id, nomatch=0)>0] = 0;
+zz$pairs$ln1f[match(zz$pairs$id1, id, nomatch=0)>0] = -20;
+zz$pairs$ln1f[match(zz$pairs$id2, id, nomatch=0)>0] = -20;
+
+id = (1:n)[match(zz$data1$un, cun$un, nomatch=0)>0];
+zz$pairs$un[match(zz$pairs$id1, id, nomatch=0)>0] = 0;
+zz$pairs$un[match(zz$pairs$id2, id, nomatch=0)>0] = 0;
+zz$pairs$unf[match(zz$pairs$id1, id, nomatch=0)>0] = -20;
+zz$pairs$unf[match(zz$pairs$id2, id, nomatch=0)>0] = -20;
+
+id = (1:n)[match(zz$data1$e, cun$e, nomatch=0)>0];
+zz$pairs$e[match(zz$pairs$id1, id, nomatch=0)>0] = 0;
+zz$pairs$e[match(zz$pairs$id2, id, nomatch=0)>0] = 0;
+zz$pairs$ef[match(zz$pairs$id1, id, nomatch=0)>0] = -20;
+zz$pairs$ef[match(zz$pairs$id2, id, nomatch=0)>0] = -20;
+}
+
+removeHom(pairsf)
+removeHom(pairs)
+
+clean = function(zz){
+  zz$e[is.na(zz$e)] = 0;
+  zz$fn[is.na(zz$fn)] = 0;
+  zz$ln[is.na(zz$ln)] = 0;
+  zz$n[is.na(zz$n)] = 0;
+  zz$un[is.na(zz$un)] = 0;
+}
+clean(pairs$pairs);
+
+close= apply(pairs$pairs[,c("n","e","ln","fn","un","ifn")], 1, max) > .8 | pairs$pairs$d2vSim>0;
+preds = c("n","e","ln","fn","un", "ifn", "lnf", "fnf", "unf", "d2vSim", "im");
+dd=pairs$pairs[close,preds];
+rfCr = randomForest(im ~ ., dd, importance=T);
+prfCr = predict(rfCr,pairs$pairs[,preds]);
+table(prfCr,pairs$pairs$im)
+
+prfCr       0       1
+    0 5493392      24
+    1       0    5609
+
+save(rfCr, file = "/home/audris/rfCr.RData");
+
+
+mm = pairs$pairs$"is_match" == 1;
+nmm=!mm & apply(pairs$pairs[,c("n","e","ln","fn","un","ifn","ln1","fn1")], 1, max) > .8 | pairs$pairs$ad>0|pairs$pairs$tdz>.9|pairs$pairs$d2vSim>0;
+nnmm=!mm & !nmm
+vv = 1:dim(pairs$pairs)[1];
+sel=sample(0:4,sum(mm),replace=T);
+sel1=sample(0:4,sum(nmm),replace=T);
+sel2=sample(0:4,sum(nnmm),replace=T);
+rfCR2 = list();
+pCR2=list();
+for (i in 0:4){
+  mm1t = vv[mm][sel!=i];
+  mm1v = vv[mm][sel==i];
+  mm0t = vv[nmm][sel1!=i];
+  mm0v = vv[nmm][sel1==i];
+  mm0v = c(mm0v, vv[nnmm][sel2==i])
+  dt=pairs$pairs[c(mm1t,mm0t),preds];
+  dv=pairs$pairs[c(mm1v,mm0v),preds];
+  rfCR2[[i+1]] = randomForest(im ~ ., dt, importance=T);
+  pCR2[[i+1]] = predict(rfCR2[[i+1]],dv);
+  print (table(pCR2[[i+1]],dv$im));
+}
+
+          0       1
+  0 1099498       5
+  1       0    2100
+
+          0       1
+  0 1099157       6
+  1       5    2067
+
+          0       1
+  0 1098077       2
+  1       2    2120
+   
+          0       1
+  0 1100059       9
+  1       2    2013
+
+################
+crl = fread("/home/audris/4096.L.txt",sep=";",quote="",colClasses="character", header=F, strip.white=F);
+names(crl) = c("a", "ch", "o", "off");
+mm=match(unlist(crl[,1]),unlist(frq[,6]),nomatch=0);
+matches = frq[mm,];
+select = match(matches$ln,names(lnamep),nomatch=0);
+matches$lnf = rep (0,dim(matches)[1])
+matches$lnf[select>0] = log10(1/lnamep[select])
+select = match(matches$fn,names(fnamep),nomatch=0);
+matches$fnf = rep (0,dim(matches)[1])
+matches$fnf[select>0] = log10(1/fnamep[select])
+select = match(matches$un,names(unamep),nomatch=0);
+matches$unf = rep (0,dim(matches)[1])
+matches$unf[select>0] = log10(1/unamep[select])
+matches$ch = crl$ch [mm>0];
+matches$o = crl$o [mm>0];
+
+names(matches)
+#save(matches, file = "/home/audris/matches.RData");
+write.table(matches[,c("a","fnf","lnf","unf","badfn","badln","badun","ch","o")], file = "/home/audris/matches.csv",row.names=F,sep=";",quote=F);
+
+
+
+
+#now calculate predictions
+
+extra = read.table("/home/audris/0.p.csv.bad", sep=";",quote="",header=T);
+names(extra) = c("ch0","o0","ch1","o1","a0","a1","d2v0","n", "e","ln","fn","un","ifn","fnf","lnf", "unf","d2vSim");
+extra$im = rep(0,dim(extra)[1])
+dd=pairs$pairs[close,preds];
+dd = rbind(dd, extra[,preds])
+
+rfCr1 = randomForest(im ~ ., dd, importance=T);
+prfCr1 = predict(rfCr1,pairs$pairs[,preds]);
+table(prfCr1,pairs$pairs$im)
+prfCr1       0       1
+     0 5493392      23
+     1       0    5610
+table(predict(rfCr1,extra[,preds]));
+   0    1 
+2128    0 
+
+
+cut -d\; -f1-4,7- ~/0.p.csv > ~/0.p.csv1
+extra1 = read.table("/home/audris/0.p.csv1", sep=";",quote="",header=T);
+names(extra1) = c("ch0","o0","ch1","o1","d2v0","n", "e","ln","fn","un","ifn","fnf","lnf", "unf","d2vSim");
+extra1$im = rep(0,dim(extra1)[1])
+extra1$im[extra1$e==1] = 1;
+extra1p = extra1[,preds];
+
+dd = rbind(dd, extra1p);
+#clean(dd);
+
+rfCr2 = randomForest(im ~ ., dd, importance=T);
+prfCr2 = predict(rfCr2,pairs$pairs[,preds]);
+table(prfCr2,pairs$pairs$im)
+prfCr2       0       1
+     0 5493392      23
+     1       0    5610
+
+table(predict(rfCr2,extra[,preds]));
+   0    1
+2128    0
+
+table(predict(rfCr2,extra1p),extra1p$im);
+
+      0   1
+  0 794   0
+  1   0  98
+
+
+save(rfCr2, file = "/home/audris/rfCr2.RData");
+
+extra2 = read.table("/home/audris/0.p.csv", sep=";",quote="",header=T,comment.char="");
+
+####################################################################################################
+
+
+
+#
+for i in {0..4095}; do cat 4096_0-1/outL.$i | awk 'BEGIN {i=1}{print $0";'$i';"i++}'; done | awk -F\; 'BEGIN {i=0}{print $1";"$3";"$4";"i++}' | gzip > 4096.L
+
+
+
+seq 0 16 4079 |while read i; do sed "s/NNN/$i/" extr.pbs > extr1.pbs; qsub extr1.pbs; done
+
+seq 0 16 1024 |while read i; do sed "s/NNN/$i/" pred.pbs > pred.$i.pbs; sed "s/NNN/$i/" pred.r > pred.$i.r; qsub pred.$i.pbs; done
+
+
+
+################################
+# Compare with the Bogdan's algorithm
+#make transitive closure
+load("/home/audris/rfmodelsFullP7.c.RData")
+
+
+cat /data/play/cbogart/openstack/aliasmap_bogdanv.json | grep : | sed 's/^\s*"//;s/": "/;/;s/",\s*$//' > bogdan.map
+
+x=bogd$a[is.na(match(bogd$a,pairsf$data1$autf))]
+> x
+[1] "Chung Chih"
+[2] "Xian Dong"
+[3] "Matt Dietz and John Yolo Perkins <matt.dietz@rackspace.com"
+[4] "OTSUKA"
+[5] "Li"
+
+cat /data/play/cbogart/openstack/aliasmap_bogdanv.json | grep : | grep 'Matt Dietz and John '
+    "Matt Dietz and John Yolo Perkins <matt.dietz@rackspace.com": "Cerberus <matt.dietz@rackspace.com>",
+
+pairsf$data1$autf[grep ("Matt Dietz", pairsf$data1$autf)]
+[1] "Matt Dietz <matt.dietz@rackspace.com>"
+[2] "Matt Dietz <matthew.dietz@gmail.com>"
+[3] "Matt Dietz and John Yolo Perkins <matt.dietz@rackspace.com, john.perkins@rackspace.com>"
+
+[1] "Xian Dong, Meng <mengxd@cn.ibm.com>"     
+[2] "Xian Dong, Meng <mengxiandong@gmail.com>"
+
+bogd <-read.table("/home/audris/bogdan.map", sep=';',quote="",colClasses=c("character","character"))
+names(bogd) = c("a","id");
+pairsf$data1$autf = utf8_encode(pairsf$data1$a);
+
+#pairsf$data1$autf[grep ("Ulrik", pairsf$data1$autf)]
+mm=match(bogd$a,pairsf$data1$autf);
+mm1=match(bogd$id,pairsf$data1$autf);
+res = cbind(mm,mm1)
+res = res[!is.na(apply(res,1,sum)),];
+
+
+library(readr)
+library(igraph)
+n=dim(pairsf$data1)[1]
+library(readr)
+library(igraph)
+gbo <- make_empty_graph(n, directed = FALSE); # empty graph
+gbo <- set_vertex_attr(gbo, "a", value = pairsf$data1$a);
+gbo <- set_vertex_attr(gbo, "id", value = 1:n);
+gbo <- add_edges(gbo, as.vector(t(res)));  
+clustgbo <- components(gbo, "weak") # get clusters
+blocksgbo <- data.frame(id=V(gbo)$id, block=clustgbo$membership) # block number  
+
+
+g <- make_empty_graph(n, directed = FALSE); # empty graph
+g <- set_vertex_attr(g, "a", value = pairsf$data1$a);
+g <- set_vertex_attr(g, "id", value = 1:n);
+g=simplify(g,remove.multiple = TRUE, remove.loops = TRUE)          
+lnk=fullP7.c==2
+lnk1= pairsf$pairs[lnk,1:2]
+
+g <- add_edges(g, as.vector(t(lnk1)));
+clustg <- components(g, "weak") # get clusters
+blocksg <- data.frame(id=V(g)$id, block=clustg$membership) # block number  
+
+tng = table(blocksg$block)
+tbo = table(blocksgbo$block)
+badSplitBo = c();
+for (id in names(tng[tng>1])){
+    ids = blocksgbo[match(blocksgbo[,1],blocksg[blocksg$block==id,1],nomatch=0)>0,2];
+    badSplitBo = c(badSplitBo,length(table(ids)));
+}    
+badClumpBo = c();
+for (id in names(tbo)){
+    cl = blocksgbo[blocksgbo$block==id,1];
+    mm = blocksg[match(cl, blocksg$id),2];
+    ids = blocksg[mm,2];
+    badClumpBo = c(badClumpBo,length(table(ids)));
+}
+table(badSplitBo>1)
+FALSE  TRUE 
+  977  1979 
+
+table(badClumpBo>1)
+FALSE  TRUE 
+14298    21 
+
+#see match with manual 
+#manNodes = names(table(c(pairs$data1$a[pairs$pairs[pairs$pairs$im==1,1]],
+#    pairs$data1$a[pairs$pairs[pairs$pairs$im==1,2]])));
+nm = dim(pairs$data1)[1];
+gm <- make_empty_graph(nm, directed = FALSE); # empty graph
+gm <- set_vertex_attr(gm, "a", value = pairs$data1$a);
+gm <- set_vertex_attr(gm, "id", value = 1:nm);
+gm=simplify(gm,remove.multiple = TRUE, remove.loops = TRUE);          
+amatch=paste(pairs$data1$a[pairs$pairs$id1],pairs$data1$a[pairs$pairs$id2], sep = ";");
+amatchf=paste(pairsf$data1$a[pairsf$pairs$id1],pairsf$data1$a[pairsf$pairs$id2], sep = ";");
+P7.c = fullP7.c[match(amatch,amatchf)] == 2;
+lnk1m = pairs$pairs[P7.c,1:2];
+gm <- add_edges(gm, as.vector(t(lnk1m)));
+clustgm <- components(gm, "weak"); # get clusters
+blocksgm <- data.frame(id=V(gm)$id, block=clustgm$membership); # block number  
+
+gt <- make_empty_graph(nm, directed = FALSE); # empty graph
+gt <- set_vertex_attr(gt, "a", value = pairs$data1$a);
+gt <- set_vertex_attr(gt, "id", value = 1:nm);
+gt <- simplify (gt,remove.multiple = TRUE, remove.loops = TRUE);
+gt <- add_edges (gt, as.vector(t(pairs$pairs[pairs$pairs$im==1,1:2])));
+clustgt <- components(gt, "weak"); # get clusters
+blocksgt <- data.frame(id=V(gt)$id, block=clustgt$membership); # block number  
+
+nm = dim(pairs$data1)[1];
+gb <- make_empty_graph(nm, directed = FALSE); # empty graph
+gb <- set_vertex_attr(gb, "a", value = pairs$data1$a);
+gb <- set_vertex_attr(gb, "id", value = 1:nm);
+pairs$data1$autf = utf8_encode(pairs$data1$a);
+#pairsf$data1$autf[grep ("Ulrik", pairsf$data1$autf)]
+mm=match(bogd$a,pairs$data1$autf);
+mm1=match(bogd$id,pairs$data1$autf);
+res = cbind(mm,mm1)
+res = res[!is.na(apply(res,1,sum)),];
+gb=simplify(gb,remove.multiple = TRUE, remove.loops = TRUE);
+gb <- add_edges (gb, as.vector(t(res)));
+clustgb <- components(gb, "weak"); # get clusters
+blocksgb <- data.frame(id=V(gb)$id, block=clustgb$membership); # block number  
+
+tn = table(blocksgt$block);
+tb = table(blocksgb$block);
+tm = table(blocksgm$block);
+
+badSplitB = c();
+for (id in names(tn[tn>1])){
+    ids = blocksgb[match(blocksgb[,1],blocksgt[blocksgt$block==id,1],nomatch=0)>0,2];
+    badSplitB = c(badSplitB,length(table(ids)));
+}    
+badClumpB = c();
+for (id in names(tb)){
+    cl = blocksgb[blocksgb$block==id,1];
+    mm = blocksgt[match(cl, blocksgt$id),2];
+    ids = blocksgt[mm,2];
+    badClumpB = c(badClumpB,length(table(ids)));
+}
+badSplitR = c();
+for (id in names(tn[tn>1])){
+    ids = blocksgm[match(blocksgm[,1],blocksgt[blocksgt$block==id,1],nomatch=0)>0,2];
+    badSplitR = c(badSplitR,length(table(ids)));
+}    
+badClumpR = c();
+for (id in names(tm)){
+    cl = blocksgm[blocksgm$block==id,1];
+    mm = blocksgt[match(cl, blocksgt$id),2];
+    ids = blocksgt[mm,2];
+    badClumpR = c(badClumpR,length(table(ids)));
+}
+table(badSplitB>1)
+FALSE  TRUE 
+  201   806 
+
+table(badSplitR>1)
+FALSE  TRUE 
+  992    15 
+
+table(badClumpB>1)
+FALSE  TRUE 
+ 2089     1 
+
+table(badClumpR>1)
+FALSE  TRUE 
+ 1054     8 
+
+
+
+# Do cross-rate reliability
+
+
+
+
+
+
