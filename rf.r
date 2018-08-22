@@ -867,10 +867,11 @@ for (dev in names(tba[tba>1])){
 }    
 morRec = morRec[-1,]
 bitr=rbind(bitr,morRec);
-as=read.table("/data/delta/openstack.a.gz",sep=";",quote="",colClasses="character", header=F, strip.white=F)
-mb = match(bitr$a, as[,1], nomatch=0);
+#as=read.table("/data/delta/openstack.a.gz",sep=";",quote="",colClasses="character", header=F, strip.white=F)
+
+mb = match(bitr$a, pairsf$data1$a, nomatch=0);
 bitr = bitr[mb>0,]
-mb = match(bitr$a, as[,1], nomatch=0);
+mb = match(bitr$a, pairsf$data1$a, nomatch=0);
 #nowcreate graphs
 tbi = table(bitr$id);
 tba = table(bitr$a);
@@ -895,12 +896,27 @@ for (dev in names(tba[tba>1])){
 
 prs=pairsf$pairs[fullP7.c==2,1:2];
 
+
 prs1 = cbind(pairsf$data1[prs[,1],"a"],pairsf$data1[prs[,2],"a"]);
 sel = match(as.vector(unclass(V(gn)$a)),prs1[,1],nomatch=0)>0 & match(as.vector(unclass(V(gn)$a)),prs1[,2],nomatch=0)>0
 sel1 = match(prs1[,1],as.vector(unclass(V(gn)$a))[sel],nomatch=0)>0 & match(prs1[,2],as.vector(unclass(V(gn)$a))[sel],nomatch=0)>0
 fr=(1:nb)[sel][match(prs1[sel1,1],as.vector(unclass(V(gn)$a))[sel],nomatch=0)];
 to=(1:nb)[sel][match(prs1[sel1,2],as.vector(unclass(V(gn)$a))[sel],nomatch=0)];
 gn <- add_edges(gn, as.vector(rbind(fr,to)))
+
+
+gbf = as_long_data_frame(gb)[,c("from_a","to_a")];
+gnf = as_long_data_frame(gn)[,c("from_a","to_a")];
+sum(is.na(match(paste(gbf[,1],gbf[,2],sep=";"),paste(gnf[,1],gnf[,2],sep=";"))))
+[1] 6
+> sum(is.na(match(paste(gnf[,1],gnf[,2],sep=";"),paste(gbf[,1],gbf[,2],sep=";"))))
+[1] 17587
+dim(V(gn))
+10344
+dim(gnf)
+[1] 22485     2
+dim(gbf)
+1504
 
 clustb <- components(gb, "weak") # get clusters
 blocksb <- data.frame(id = V(gb)$i, block=clustb$membership) # block number  
@@ -913,6 +929,8 @@ gnc=simplify(gnc,remove.multiple = TRUE, remove.loops = TRUE)
 gbc=simplify(gbc,remove.multiple = TRUE, remove.loops = TRUE)          
 tn = table(blocksn$block)
 tb = table(blocksb$block)
+
+
 badSplit = c();
 for (id in names(tn[tn>1])){
     ids = blocksb[match(blocksb[,1],blocksn[blocksn$block==id,1],nomatch=0)>0,2];
@@ -2534,13 +2552,116 @@ seq 0 16 4079 |while read i; do sed "s/NNN/$i/" extr.pbs > extr1.pbs; qsub extr1
 seq 0 16 1024 |while read i; do sed "s/NNN/$i/" pred.pbs > pred.$i.pbs; sed "s/NNN/$i/" pred.r > pred.$i.r; qsub pred.$i.pbs; done
 
 
+################################
+# Compare with the Yuxias markings
+################################
+grep '^[0-9]' crossRaterRelibility1.csv |grep -v ^99cloud| awk -F\; '{print $3" <"$5">;"$4" <"$6">;"$7";"$8}' > crossRater0.csv
+yux <-read.table("/home/audris/crossRater0.csv", sep=';',quote="",colClasses=c("character","character"),comment.char="");
+names(yux) = c("a1","a2","y","a");
+yux$y1 = yux$y>=.5 
+yux[is.na(match (yux$a1,pairsf$data1$a)),]
+yux[is.na(match (yux$a2,pairsf$data1$a)),]
+mm1=match(yux$a1,pairsf$data1$a);
+mm2=match(yux$a2,pairsf$data1$a);
+sel = match(paste(yux$a1,yux$a2, sep = ";"), amatchf);
+crr = pairsf$pairs[sel,]
+crrP = fullP7.c[sel]
+crrP4 = fullP4[sel]
+crrP1 = fullP1[sel]
+crrP2 = fullP2[sel]
+crrP3 = fullP3[sel]
+crrP5 = fullP5[sel]
+crrP6 = fullP6[sel]
+crrP8 = fullP8[sel]
+crrP9 = fullP9[sel]
+crrP10 = fullP10[sel]
+
+vv=c(sum (crrP-1!=yux$a),
+sum (crrP1-1!=yux$a),
+sum (crrP2-1!=yux$a),
+sum (crrP3-1!=yux$a),
+sum (crrP4-1!=yux$a),
+sum (crrP5-1!=yux$a),
+sum (crrP6-1!=yux$a),
+sum (crrP-1!=yux$a),
+sum (crrP8-1!=yux$a),
+sum (crrP9-1!=yux$a),
+sum (crrP10-1!=yux$a))
+summary(vv)
+  Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  11.00   15.00   16.00   15.18   16.50   18.00 
+
+
+vv1=c(sum (crrP-1!=yux$y1),
+sum (crrP1-1!=yux$y1),
+sum (crrP2-1!=yux$y1),
+sum (crrP3-1!=yux$y1),
+sum (crrP4-1!=yux$y1),
+sum (crrP5-1!=yux$y1),
+sum (crrP6-1!=yux$y1),
+sum (crrP-1!=yux$y1),
+sum (crrP8-1!=yux$y1),
+sum (crrP9-1!=yux$y1),
+sum (crrP10-1!=yux$y1))
+summary(vv1)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   19.0    22.0    24.0    23.0    24.5    26.0 
+
+
 
 ################################
 # Compare with the Bogdan's algorithm
+zcat /data/shared/delta/data/openstack.a.gz | lsort 1G -u -t\; -k1b > a
+zcat chris_raw_emails.csv | lsort 1G -t\; -u > b
+
+perl -e 'open A, "b";while(<A>){$a{$_}++;}open A,"a";while(<A>){print if defined $a{$_}};' > common_os_chris
+
+
+zcat idm_log.csv.gz |grep ^[0-9] | cut -d\; -f1,3,4| sed 's/;/|/;s/;/ </;s/$/>/' | perl -e 'while(<STDIN>){chop();($i,$a)=split(/\|/,$_,-1);$i2a{$i}=$a;};open A,"zcat idm_map.csv.gz|";while(<A>){chop();s/\r//;($i,$ci)=split(/\;/,$_,-1);print "$i2a{$i};$i2a{$ci}\n"}' > ~/bogdan.map1
+bogd1 <-read.table("/home/audris/bogdan.map1", sep=';',quote="",colClasses=c("character","character"),comment.char="");
+names(bogd1) = c("a","id");
+mm=match(bogd1$a,pairsf$data1$autf);
+mm1=match(bogd1$id,pairsf$data1$autf);
+res = cbind(mm,mm1)
+res = res[!is.na(apply(res,1,sum)),];
+
+library(readr)
+library(igraph)
+n=dim(pairsf$data1)[1]
+library(readr)
+library(igraph)
+gbo1 <- make_empty_graph(n, directed = FALSE); # empty graph
+gbo1 <- set_vertex_attr(gbo1, "a", value = pairsf$data1$a);
+gbo1 <- set_vertex_attr(gbo1, "id", value = 1:n);
+gbo1 <- add_edges(gbo1, as.vector(t(res)));  
+clustgbo1 <- components(gbo1, "weak") # get clusters
+blocksgbo1 <- data.frame(id=V(gbo1)$id, block=clustgbo1$membership) # block number  
+
+tbo1 = table(blocksgbo1$block)
+badSplitBo1 = c();
+for (id in names(tng[tng>1])){
+    ids = blocksgbo1[match(blocksgbo1[,1],blocksg[blocksg$block==id,1],nomatch=0)>0,2];
+    badSplitBo1 = c(badSplitBo1,length(table(ids)));
+}    
+badClumpBo1 = c();
+for (id in names(tbo1)){
+    cl = blocksgbo1[blocksgbo1$block==id,1];
+    mm = blocksg[match(cl, blocksg$id),2];
+    ids = blocksg[mm,2];
+    badClumpBo1 = c(badClumpBo1,length(table(ids)));
+}
+table(badSplitBo1>1)
+FALSE  TRUE
+  593  2363
+> table(badClumpBo1>1)
+
+FALSE  TRUE
+14665    20
+
+#x1=bogd1$a[!is.na(match(bogd1$a,pairsf$data1$autf))]
+
 #make transitive closure
 load("/home/audris/rfmodelsFullP7.c.RData")
-
-
 cat /data/play/cbogart/openstack/aliasmap_bogdanv.json | grep : | sed 's/^\s*"//;s/": "/;/;s/",\s*$//' > bogdan.map
 
 x=bogd$a[is.na(match(bogd$a,pairsf$data1$autf))]
@@ -2701,10 +2822,6 @@ FALSE  TRUE
 table(badClumpR>1)
 FALSE  TRUE 
  1054     8 
-
-
-
-# Do cross-rate reliability
 
 
 
