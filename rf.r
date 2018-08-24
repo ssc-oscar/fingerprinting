@@ -1,4 +1,5 @@
-#try random forest
+tos all
+                                        #try random forest
 library(randomForest);
 pairs <- readRDS("../MODELS_PHASE5/match2345_pairs.RDS");
 pairs$pairs$im = as.factor(pairs$pairs$"is_match");
@@ -851,7 +852,8 @@ save(fullP7.c, nn, tbg7c, blocksg7c, file = "/home/audris/rfmodelsFullP7.c.RData
 
 
 ##################################
-# compare to bitergia 
+# compare to bitergia FINAL
+##################################
 library(readr)
 library(igraph)
 bitr <- read_delim("../BITERGIA/map2mysqlIds1", delim = ';', col_names = F)
@@ -875,6 +877,11 @@ mb = match(bitr$a, pairsf$data1$a, nomatch=0);
 #nowcreate graphs
 tbi = table(bitr$id);
 tba = table(bitr$a);
+length(tbi)
+8840
+length(tba)
+9028
+
 nb=dim(bitr)[1];
 bitr$off=1:nb;
 gb <- make_empty_graph(nb, directed = FALSE); # empty graph
@@ -930,6 +937,10 @@ gbc=simplify(gbc,remove.multiple = TRUE, remove.loops = TRUE)
 tn = table(blocksn$block)
 tb = table(blocksb$block)
 
+length(tba)
+
+length(tn)
+6271
 
 badSplit = c();
 for (id in names(tn[tn>1])){
@@ -942,12 +953,9 @@ for (id in names(tn)){
     ids = blocksb[blocksb$block==cl,1];
     badClump = c(badClump,length(table(ids)));
 }
-
 table(badSplit>1)
 FALSE  TRUE 
   141  1641 
-
-
 1641/nb
 [1] 0.1586427
 
@@ -2552,9 +2560,9 @@ seq 0 16 4079 |while read i; do sed "s/NNN/$i/" extr.pbs > extr1.pbs; qsub extr1
 seq 0 16 1024 |while read i; do sed "s/NNN/$i/" pred.pbs > pred.$i.pbs; sed "s/NNN/$i/" pred.r > pred.$i.r; qsub pred.$i.pbs; done
 
 
-################################
-# Compare with the Yuxias markings
-################################
+################################################################
+# Compare with the Yuxias markings /cross-rater FINAL
+################################################################
 grep '^[0-9]' crossRaterRelibility1.csv |grep -v ^99cloud| awk -F\; '{print $3" <"$5">;"$4" <"$6">;"$7";"$8}' > crossRater0.csv
 yux <-read.table("/home/audris/crossRater0.csv", sep=';',quote="",colClasses=c("character","character"),comment.char="");
 names(yux) = c("a1","a2","y","a");
@@ -2611,17 +2619,18 @@ summary(vv1)
 
 ################################
 # Compare with the Bogdan's algorithm
-zcat /data/shared/delta/data/openstack.a.gz | lsort 1G -u -t\; -k1b > a
-zcat chris_raw_emails.csv | lsort 1G -t\; -u > b
-
-perl -e 'open A, "b";while(<A>){$a{$_}++;}open A,"a";while(<A>){print if defined $a{$_}};' > common_os_chris
-
-
-zcat idm_log.csv.gz |grep ^[0-9] | cut -d\; -f1,3,4| sed 's/;/|/;s/;/ </;s/$/>/' | perl -e 'while(<STDIN>){chop();($i,$a)=split(/\|/,$_,-1);$i2a{$i}=$a;};open A,"zcat idm_map.csv.gz|";while(<A>){chop();s/\r//;($i,$ci)=split(/\;/,$_,-1);print "$i2a{$i};$i2a{$ci}\n"}' > ~/bogdan.map1
-bogd1 <-read.table("/home/audris/bogdan.map1", sep=';',quote="",colClasses=c("character","character"),comment.char="");
+################################
+bogd1 <-read.table("/home/audris/aliasDict.txt", sep=';',quote="",colClasses=c("character","character"),comment.char="");
 names(bogd1) = c("a","id");
-mm=match(bogd1$a,pairsf$data1$autf);
-mm1=match(bogd1$id,pairsf$data1$autf);
+mm=match(utf8_encode(bogd1$a),pairsf$data1$autf);
+mm1=match(utf8_encode(bogd1$id),pairsf$data1$autf);
+bogd1$a[is.na(mm)][1:7]
+[1] "Joan Varvenne, Suksant Sae Lor and David Subiros Perez <joan.varvenne@hpe.com"
+[2] " david.perez5@hpe.com>"                                                       
+[3] " suksant.sae-lor@hpe.com"                                                     
+[4] "tleontovich  <tatyana.leontovich@gmail.com>"
+
+
 res = cbind(mm,mm1)
 res = res[!is.na(apply(res,1,sum)),];
 
@@ -2636,8 +2645,23 @@ gbo1 <- set_vertex_attr(gbo1, "id", value = 1:n);
 gbo1 <- add_edges(gbo1, as.vector(t(res)));  
 clustgbo1 <- components(gbo1, "weak") # get clusters
 blocksgbo1 <- data.frame(id=V(gbo1)$id, block=clustgbo1$membership) # block number  
-
 tbo1 = table(blocksgbo1$block)
+
+g <- make_empty_graph(n, directed = FALSE); # empty graph
+g <- set_vertex_attr(g, "a", value = pairsf$data1$a);
+g <- set_vertex_attr(g, "id", value = 1:n);
+g=simplify(g,remove.multiple = TRUE, remove.loops = TRUE)          
+lnk=fullP7.c==2
+lnk1= pairsf$pairs[lnk,1:2]
+
+g <- add_edges(g, as.vector(t(lnk1)));
+clustg <- components(g, "weak") # get clusters
+blocksg <- data.frame(id=V(g)$id, block=clustg$membership) # block number  
+
+tng = table(blocksg$block)
+tbo1 = table(blocksgbo1$block)
+
+
 badSplitBo1 = c();
 for (id in names(tng[tng>1])){
     ids = blocksgbo1[match(blocksgbo1[,1],blocksg[blocksg$block==id,1],nomatch=0)>0,2];
@@ -2654,7 +2678,6 @@ table(badSplitBo1>1)
 FALSE  TRUE
   593  2363
 > table(badClumpBo1>1)
-
 FALSE  TRUE
 14665    20
 
