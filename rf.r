@@ -912,6 +912,7 @@ to=(1:nb)[sel][match(prs1[sel1,2],as.vector(unclass(V(gn)$a))[sel],nomatch=0)];
 gn <- add_edges(gn, as.vector(rbind(fr,to)))
 
 
+
 gbf = as_long_data_frame(gb)[,c("from_a","to_a")];
 gnf = as_long_data_frame(gn)[,c("from_a","to_a")];
 sum(is.na(match(paste(gbf[,1],gbf[,2],sep=";"),paste(gnf[,1],gnf[,2],sep=";"))))
@@ -925,6 +926,19 @@ dim(gnf)
 dim(gbf)
 1504
 
+
+measures = function (p, t){
+  tt=table(p,t);
+  rec = tt[2,2]/(tt[2,2]+tt[1,2]);
+  prec =  tt[2,2]/(tt[2,2]+tt[2,1]);
+  spl = 1-rec;
+  lu = tt[2,1]/(tt[2,2]+tt[1,2]);
+  c(prec, rec, spl, lu);
+}
+
+
+
+
 clustb <- components(gb, "weak") # get clusters
 blocksb <- data.frame(id = V(gb)$i, block=clustb$membership) # block number  
 gbc = contract(gb,blocksb[,"block"],vertex.attr.comb=list(i="min"));  
@@ -936,6 +950,19 @@ gnc=simplify(gnc,remove.multiple = TRUE, remove.loops = TRUE)
 gbc=simplify(gbc,remove.multiple = TRUE, remove.loops = TRUE)          
 tn = table(blocksn$block)
 tb = table(blocksb$block)
+fwrite(blocksn,"/home/audris/aaBOS.txt",sep=";",quote=F, col.names=F)
+fwrite(blocksb,"/home/audris/bitBOS.txt",sep=";",quote=F, col.names=F)
+#create complete graphs for each block and compare
+#perl splCl.perl aaBOS.txt bitBOS.txt
+read 10344
+created la: 6271 clstrs with max 24
+created lt: 8840 clstrs with max 7
+tp=14828 fp=14
+tp=14828;fp=14;fn=16802
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.9990567309 0.4687954474 0.5312045526 0.0004426178
+
+
 
 length(tba)
 
@@ -2569,9 +2596,19 @@ names(yux) = c("a1","a2","y","a");
 yux$y1 = yux$y>=.5 
 yux[is.na(match (yux$a1,pairsf$data1$a)),]
 yux[is.na(match (yux$a2,pairsf$data1$a)),]
+tp=table(yux$a,yux$y1)[2,2];
+fp=table(yux$a,yux$y1)[1,2];
+fn=table(yux$a,yux$y1)[2,1];
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.98613251 0.98613251 0.01386749 0.01386749
+
+
+
 mm1=match(yux$a1,pairsf$data1$a);
 mm2=match(yux$a2,pairsf$data1$a);
 sel = match(paste(yux$a1,yux$a2, sep = ";"), amatchf);
+
+
 crr = pairsf$pairs[sel,]
 crrP = fullP7.c[sel]
 crrP4 = fullP4[sel]
@@ -2583,6 +2620,18 @@ crrP6 = fullP6[sel]
 crrP8 = fullP8[sel]
 crrP9 = fullP9[sel]
 crrP10 = fullP10[sel]
+
+crr[[1]] =crrP1; 
+crr[[2]] =crrP2; 
+crr[[3]] =crrP3; 
+crr[[4]] =crrP4; 
+crr[[5]] =crrP5; 
+crr[[6]] =crrP6; 
+crr[[7]] =crrP; 
+crr[[8]] =crrP8; 
+crr[[9]] =crrP9; 
+crr[[10]] =crrP10; 
+
 
 vv=c(sum (crrP-1!=yux$a),
 sum (crrP1-1!=yux$a),
@@ -2615,10 +2664,32 @@ summary(vv1)
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
    19.0    22.0    24.0    23.0    24.5    26.0 
 
+measures = function (p, t){
+  tt=table(p,t);
+  rec = tt[2,2]/(tt[2,2]+tt[1,2]);
+  prec =  tt[2,2]/(tt[2,2]+tt[2,1]);
+  spl = 1-rec;
+  lu = tt[2,1]/(tt[2,2]+tt[1,2]);
+  c(prec, rec, spl, lu);
+}
+res = c();
+for (i in 1:10){
+  res = rbind (res, measures(crr[[i]]-1,yux$a));
+}
+dimnames(res)[[2]]=c("Prec","Rec","Spl","Clum")
+summary(res)   
+Prec             Rec              Spl               Clum         
+ Min.   :0.9922   Min.   :0.9784   Min.   :0.01079   Min.   :0.006163  
+ 1st Qu.:0.9938   1st Qu.:0.9804   1st Qu.:0.01695   1st Qu.:0.006163  
+ Median :0.9938   Median :0.9815   Median :0.01849   Median :0.006163  
+ Mean   :0.9936   Mean   :0.9823   Mean   :0.01772   Mean   :0.006317  
+ 3rd Qu.:0.9938   3rd Qu.:0.9831   3rd Qu.:0.01965   3rd Qu.:0.006163  
+ Max.   :0.9938   Max.   :0.9892   Max.   :0.02157   Max.   :0.007704  
+
 
 
 ################################
-# Compare with the Bogdan's algorithm
+# Compare with the Bogdan's algorithm  FINAL
 ################################
 bogd1 <-read.table("/home/audris/aliasDict.txt", sep=';',quote="",colClasses=c("character","character"),comment.char="");
 names(bogd1) = c("a","id");
@@ -2657,9 +2728,30 @@ lnk1= pairsf$pairs[lnk,1:2]
 g <- add_edges(g, as.vector(t(lnk1)));
 clustg <- components(g, "weak") # get clusters
 blocksg <- data.frame(id=V(g)$id, block=clustg$membership) # block number  
+fwrite(blocksg,"/home/audris/aaOS.txt",sep=";",quote=F, col.names=F)
+fwrite(blocksgbo1,"/home/audris/twOS.txt",sep=";",quote=F, col.names=F)
+perl splCl.perl aaOS.txt twOS.txt 
+read 16007
+created la: 10950 clstrs with max 13
+created lt: 11521 clstrs with max 25
+tp=30547 fp=1674
+tp=30547;fp=1674;fn=3812
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.94804631 0.88905381 0.11094619 0.04872086
+################################################
 
 tng = table(blocksg$block)
 tbo1 = table(blocksgbo1$block)
+
+gbo1f = as_long_data_frame(gbo1)[,c("from_a","to_a")];
+gf = as_long_data_frame(g)[,c("from_a","to_a")];
+
+fp = sum(is.na(match(paste(gbo1f[,1],gbo1f[,2]),paste(gf[,1],gf[,2]))));
+tp = sum(!is.na(match(paste(gbo1f[,1],gbo1f[,2]),paste(gf[,1],gf[,2]))));
+fn = sum(!is.na(match(paste(gf[,1],gf[,2]),paste(gbo1f[,1],gbo1f[,2]))));
+
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.988941647 0.440134579 0.559865421 0.004921588
 
 
 badSplitBo1 = c();
@@ -2682,6 +2774,91 @@ FALSE  TRUE
 14665    20
 
 #x1=bogd1$a[!is.na(match(bogd1$a,pairsf$data1$autf))]
+
+##################################################################
+ # 1.8M FINAL
+##################################################################
+alias = pickle.load( open( "/home/audris/tweaked1.8plusOS.dict", "rb" ) )
+f=open('/home/audris/tweaked.txt','wb')
+for k in alias.keys():
+ s = k+";"+alias[k] + '\n'
+ f.write(s.encode('utf8'))
+
+awk -F\; '{if (NF==2){print}}' tweaked.txt > tweaked1.txt 
+cut -d\; -f5,6 4096_out/*.p.csv|grep -v '^;$' > /home/audris/alfaa.txt
+
+alfaa = fread("/home/audris/alfaa.txt",sep=";",quote="",colClasses="character", header=F, strip.white=F);
+tweak = fread("/home/audris/tweaked1.txt",sep=";",quote="",colClasses="character", header=F, strip.white=F);
+
+nn=names(table(c(as.vector(unlist(alfaa[,1])),as.vector(unlist(alfaa[,2])),
+    as.vector(unlist(tweak[,1])),as.vector(unlist(tweak[,2])))));
+gf <- make_empty_graph(length(nn), directed = FALSE); # empty graph
+gf <- set_vertex_attr(gf, "a", value = nn);
+gf <- set_vertex_attr(gf, "id", value = 1:length(nn));
+gf1 = gf;
+
+aa= cbind(match(as.vector(unlist(alfaa[,1])),nn),match(as.vector(unlist(alfaa[,2])),nn))
+gf <- add_edges(gf,t(aa));  
+zz=degree(gf)
+
+#get rid problematic nodes that have degree above 24
+#gf = delete_vertices(gf, (1:length(nn))[zz>14])
+gf=simplify(gf,remove.multiple = TRUE, remove.loops = TRUE)          
+tw= cbind(match(as.vector(unlist(tweak[,1])),nn),match(as.vector(unlist(tweak[,2])),nn))
+gf1 <- add_edges(gf1,t(tw));  
+#gf1 = delete_vertices(gf1, (1:length(nn))[zz>14])
+gf1=simplify(gf1,remove.multiple = TRUE, remove.loops = TRUE)          
+
+
+ctw <- components(gf1, "weak") # get clusters
+caa <- components(gf, "weak") # get clusters
+
+blocksaa <- data.frame(id=V(gf)$id, block=caa$membership) # block number  
+blockstw <- data.frame(id=V(gf1)$id, block=ctw$membership) # block number  
+fwrite(blocksaa,"/home/audris/aa.txt",sep=";",quote=F, col.names=F)
+fwrite(blockstw,"/home/audris/tw.txt",sep=";",quote=F, col.names=F)
+#no filtering
+perl splCl.perl aa.txt tw.txt 
+
+
+
+#
+perl splCl.perl aa.txt tw.txt 
+read 1814041
+created la: 184731 clstrs with max 408
+created lt: 1047238 clstrs with max 1930
+tp=330965 fp=13707664
+tp=330965;fp=13707664;fn=732392
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1]  0.02357531  0.31124542  0.68875458 12.89093315
+
+blocksaa$b1=blockstw$block
+blocksaa=blocksaa[-match(blocksaa$b1,names(table(blocksaa$b1)>200)),]
+blocksaa=blocksaa[-match(blocksaa$block,names(table(blocksaa$block)>200)),]
+
+fwrite(blocksaa,"/home/audris/aaVsTw.txt",sep=";",quote=F, col.names=F)
+read 1814041
+created la: 184731 clstrs with max 408
+created lt: 209552 clstrs with max 192
+tp=330965 fp=93490
+tp=330965;fp=93490;fn=732392
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+
+
+#degree >14 filtering
+tp=8342267;fp=5696362;fn=52883132;
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.5942366 0.1362550 0.8637450 0.0930392
+#degree >24 filtering
+perl splCl.perl < aaVsTw.txt 
+read 1814041
+created la: 954175 clstrs with max 4844
+created lt: 1054362 clstrs with max 1960
+tp=8603589;fp=5816028;fn=59137556
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.59665864 0.12700684 0.87299316 0.08585665
+
+
 
 #make transitive closure
 load("/home/audris/rfmodelsFullP7.c.RData")
