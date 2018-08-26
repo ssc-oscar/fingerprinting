@@ -2792,6 +2792,8 @@ tweak = fread("/home/audris/tweaked1.txt",sep=";",quote="",colClasses="character
 
 nn=names(table(c(as.vector(unlist(alfaa[,1])),as.vector(unlist(alfaa[,2])),
     as.vector(unlist(tweak[,1])),as.vector(unlist(tweak[,2])))));
+
+WriteGR = function (doDeg=-1, rmCl=-1){
 gf <- make_empty_graph(length(nn), directed = FALSE); # empty graph
 gf <- set_vertex_attr(gf, "a", value = nn);
 gf <- set_vertex_attr(gf, "id", value = 1:length(nn));
@@ -2800,65 +2802,79 @@ gf1 = gf;
 aa= cbind(match(as.vector(unlist(alfaa[,1])),nn),match(as.vector(unlist(alfaa[,2])),nn))
 gf <- add_edges(gf,t(aa));  
 zz=degree(gf)
-
-#get rid problematic nodes that have degree above 24
-#gf = delete_vertices(gf, (1:length(nn))[zz>14])
-gf=simplify(gf,remove.multiple = TRUE, remove.loops = TRUE)          
 tw= cbind(match(as.vector(unlist(tweak[,1])),nn),match(as.vector(unlist(tweak[,2])),nn))
 gf1 <- add_edges(gf1,t(tw));  
-#gf1 = delete_vertices(gf1, (1:length(nn))[zz>14])
+zz1=degree(gf1)
+#get rid problematic nodes that have degree above 24
+ext = "txt"
+if (doDeg>0){
+    gf = delete_vertices(gf, (1:length(nn))[zz>doDeg|zz1>doDeg]);
+    gf1 = delete_vertices(gf1, (1:length(nn))[zz>doDeg|zz1>doDeg]);
+    ext = paste(paste("d",doDeg,sep=""),ext,sep=".")
+}
+gf=simplify(gf,remove.multiple = TRUE, remove.loops = TRUE)          
 gf1=simplify(gf1,remove.multiple = TRUE, remove.loops = TRUE)          
-
-
-ctw <- components(gf1, "weak") # get clusters
 caa <- components(gf, "weak") # get clusters
-
+ctw <- components(gf1, "weak") # get clusters
 blocksaa <- data.frame(id=V(gf)$id, block=caa$membership) # block number  
 blockstw <- data.frame(id=V(gf1)$id, block=ctw$membership) # block number  
-fwrite(blocksaa,"/home/audris/aa.txt",sep=";",quote=F, col.names=F)
-fwrite(blockstw,"/home/audris/tw.txt",sep=";",quote=F, col.names=F)
+if (rmCl>0){
+    blocksaa=blocksaa[-match(blocksaa$block,names(table(blocksaa$block)>rmCl)),]
+    blockstw=blockstw[-match(blockstw$block,names(table(blockstw$block)>rmCl)),]
+    ext = paste(paste("cl",rmCl,sep=""),ext,sep=".")
+}
+
+fwrite(blocksaa,paste("/home/audris/aa.", ext, sep=""),sep=";",quote=F, col.names=F)
+fwrite(blockstw,paste("/home/audris/tw.", ext, sep=""),sep=";",quote=F, col.names=F)
+}
+WriteGR();
+WriteGR(rmCl=20);
+WriteGR(doDeg=14,rmCl=20);
+WriteGR(doDeg=14);
 #no filtering
 perl splCl.perl aa.txt tw.txt 
-
-
-
-#
-perl splCl.perl aa.txt tw.txt 
 read 1814041
-created la: 184731 clstrs with max 408
-created lt: 1047238 clstrs with max 1930
-tp=330965 fp=13707664
-tp=330965;fp=13707664;fn=732392
+created la: 951757 clstrs with max 25821
+created lt: 1058164 clstrs with max 2138
+tp=10005793 fp=5360316
+tp=10005793;fp=5360316;fn=689208108
 c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
-[1]  0.02357531  0.31124542  0.68875458 12.89093315
+[1] 0.651159835 0.014310060 0.985689940 0.007666203
 
-blocksaa$b1=blockstw$block
-blocksaa=blocksaa[-match(blocksaa$b1,names(table(blocksaa$b1)>200)),]
-blocksaa=blocksaa[-match(blocksaa$block,names(table(blocksaa$block)>200)),]
 
-fwrite(blocksaa,"/home/audris/aaVsTw.txt",sep=";",quote=F, col.names=F)
+#clusters<=20
+perl splCl.perl aa.cl20.txt tw.cl20.txt
 read 1814041
-created la: 184731 clstrs with max 408
-created lt: 209552 clstrs with max 192
-tp=330965 fp=93490
-tp=330965;fp=93490;fn=732392
+created la: 547644 clstrs with max 11617
+created lt: 574033 clstrs with max 1038
+tp=1601157 fp=1680828
+tp=1601157;fp=1680828;fn=141113829
 c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.48786238 0.01121926 0.98878074 0.01177752
 
-
-#degree >14 filtering
-tp=8342267;fp=5696362;fn=52883132;
-c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
-[1] 0.5942366 0.1362550 0.8637450 0.0930392
-#degree >24 filtering
-perl splCl.perl < aaVsTw.txt 
+#doDeg<=14,clusters<=20
+perl splCl.perl aa.cl20.d14.txt tw.cl20.d14.txt
 read 1814041
-created la: 954175 clstrs with max 4844
-created lt: 1054362 clstrs with max 1960
-tp=8603589;fp=5816028;fn=59137556
+created la: 543288 clstrs with max 581
+created lt: 553729 clstrs with max 12
+tp=1046917 fp=61194
+tp=1046917;fp=61194;fn=3507029
 c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
-[1] 0.59665864 0.12700684 0.87299316 0.08585665
+[1] 0.94477629 0.22989227 0.77010773 0.01343758
 
 
+#doDeg<=14
+perl splCl.perl aa.d14.txt tw.d14.txt
+read 1814041
+created la: 961945 clstrs with max 1239
+created lt: 1106708 clstrs with max 13
+tp=4281111 fp=321130
+tp=4281111;fp=321130;fn=14519112
+c(tp/(tp + fp), tp/(tp+fn), fn/(tp + fn), fp/(tp + fn))
+[1] 0.93022312 0.22771597 0.77228403 0.01708118
+
+
+#this needs some work as it seems the clusters on larger sets gow gigantic
 
 #make transitive closure
 load("/home/audris/rfmodelsFullP7.c.RData")
