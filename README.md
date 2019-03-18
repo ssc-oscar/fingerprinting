@@ -7,8 +7,11 @@ This repository contains data and codes for the prototype based on the framework
 crossRaterRelibility.clean.txt - Data provided to raters to create labels. Data contains user ID and company affiliations of developers - external information that helped in manual classification. These labels are used to compute agreement between raters.
 
 ### Code  
-rf.r - Script to build random forest models, predict and cross-validate. 
-       Experiments to understand effects of augmenting fingerprint metrics to string similarity.
+
+
+rf.r - Various debugging/exploratory code used to build random forest models, predict and 
+       cross-validate. Also icludes experiments to understand effects of augmenting fingerprint 
+       metrics to string similarity. It is primarily for the record keeping.
 
 .pbs, test_pmclust.R, test_pkmeans.r - codes for running on distributed environment (TITAN)
 
