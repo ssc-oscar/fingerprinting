@@ -17,9 +17,13 @@ rf_model.r - Script to build random forest models, predict and cross-validate.
 
 Models can be found at https://drive.google.com/drive/folders/170vwBToJDdBZ6li_ag2vKeqxr2ni03eM?usp=sharing
 
-match2345_pairs.RDS - 
+match2345_pairs.RDS - all pairs feature dataframe  
 
-rfmodelsFullP7.c.RData - random forest model 
+rfmodels.Rdata -
+
+rfmodelsC.Rdata -
+
+rfmodelsFullP7.c.RData - 
 
 HOMONYM_RFMODELS - Contains all random forest models built using fingerprint (files, projects, text) metrics used for cross validation.
  
