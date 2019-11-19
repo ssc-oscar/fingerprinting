@@ -117,18 +117,29 @@ for (cl in vals){
 
 #####################
 # Now the clusters that are connected stay connectsed, but what about the rest?
-# 1. All -disconnected -> disconnect
-# 2. Separated into conected subsets? -> output connected subsets (1. is a special case)
+# Separated into conected subsets -> output connected subsets 
 
+#this code does just that
 library(igraph)
+for (cl in res){
+ sel=alist$cl==cl;
+ pairs = compare.linkage (alist[sel,c("n", "e", "ln1", "fn1", "un", "a")],
+                         alist[sel,c("n", "e", "ln1", "fn1", "un", "a")],
+                         exclude=c(6),strcmp=c(1:5),strcmpfun = jarowinkler)
+ pairs$pairs[is.na(pairs$pairs)] = 0;
+ pv1 = predict(rfa1,pairs$pairs);
+ n=dim(pairs$data1)[1];
+ gg = make_empty_graph(n, directed = FALSE) # empty graph
+ gg = set_vertex_attr(gg, "id", value = 1:n) 
+ gg = add_edges(gg, as.vector(t(pairs$pairs[pv1==1,1:2]))); 
+ gg = simplify(gg,remove.multiple = TRUE, remove.loops = TRUE)
+ clustgg <- components(gg, "weak") # get clusters
+ blocksgg <- data.frame(id=V(gg)$id, block=clustgg$membership)
+ for (cc in names(table(blocksgg$block))){
+   #pairs$data1[blocksgg$id[blocksgg$block == cc],"a"]
+   write(paste(c(cl,blocksgg$id[blocksgg$block == cc]),collapse=";"), file="out", append=T);
+ }
+}
 
-n=dim(pairs$data1)[1];
-gg = make_empty_graph(n, directed = FALSE) # empty graph
-gg = set_vertex_attr(gg, "id", value = 1:n) 
-gg = add_edges(gg, as.vector(t(pairsf$pairs[pv1==1,1:2]))); 
-gg = simplify(gg,remove.multiple = TRUE, remove.loops = TRUE)
-clustgg <- components(gg, "weak") # get clusters
-blocksgg <- data.frame(id=V(gg)$id, block=clustgg$membership) # block number  
-tbgg = names(table(blocksgg$block));
 
 
