@@ -137,7 +137,7 @@ for (cl in res){
  blocksgg <- data.frame(id=V(gg)$id, block=clustgg$membership)
  for (cc in names(table(blocksgg$block))){
    #pairs$data1[blocksgg$id[blocksgg$block == cc],"a"]
-   write(paste(c(cl,blocksgg$id[blocksgg$block == cc]),collapse=";"), file="out", append=T);
+   write(paste(c(cl,blocksgg$id[blocksgg$block == cc]),collapse=";"), file="/home/audris/rfBasicModel.align.head", append=T);
  }
 }
 
