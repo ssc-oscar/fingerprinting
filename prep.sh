@@ -104,3 +104,13 @@ brun <brun@radar>;NUOG_Admiss-rating;holovchak_Admiss-rating
 brun <brun@statim.fr>;sacav1_Ionic2-Calendar
 brun <zhibo501@gmail.com>;zhibo501_c-project-demo;zhibo501_mockcpp;zhibo501_work_env;zhibo501_yFun
 
+
+
+# see https://github.com/ssc-oscar/fingerprinting/blob/master/basicModel.r
+# for how to process each block
+
+
+#use the latest to create blocks
+zcat egh.map.12 | awk -F\; '{print $2";"$1}' | perl $HOME/lookup/connectExportPreNoExclude.perl | gzip > egh.map.12.p2p
+zcat egh.map.12.p2p | perl -ane '$i++;chop (); @x=split(/;/); for $a (@x){ $a=~ m/([^<]*)<([^>]*)>/; $n=$1;$e=$2;$n=~s/\s*$//;print "$i;$n;$e;$a\n"};' | gzip > forML.gz
+
