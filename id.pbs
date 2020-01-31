@@ -1,0 +1,37 @@
+#PBS -N WHAT
+#PBS -A ACF-UTK0011
+#PBS -l feature=MACHINE
+#PBS -l partition=MACHINE
+#PBS -l nodes=1,walltime=23:50:00
+#PBS -j oe
+#PBS -S /bin/bash
+LD_LIBRARY_PATH=$HOME/lib:$HOME/lib64:$LD_LIBRARY_PATH
+
+module load r/3.6.1
+
+c=/lustre/haven/user/audris/id
+cd $c
+
+what=WHAT
+
+start=$(date +"%s")
+machine=MACHINE
+[[ $machine == monster ]] && maxM=29G
+[[ $machine == rho ]] && maxM=900M
+[[ $machine == sigma ]] && maxM=2900M
+
+if test "y" = "y"; then
+
+split -n l/16 -da2 block_IDS_$what block_IDS_$what.
+mkdir -p $what/if
+mkdir -p $what/of 
+for j in {00..15}
+do (cat block_IDS_$what.$j | while read id; do cat block_chunk_$what | grep "^$id;" > $what/if/fin.$id; sed "s|INPUT|$what/if/fin.$id|;s|OUTPUT|$what/of/of.$id|" basicModel.r | R --no-save -q &>/dev/null; done) &
+done
+wait
+
+
+fi
+
+end=$(date +"%s")
+echo $(($end-$start))

@@ -75,8 +75,8 @@ save(rfa, rfa1, rf, file = "/home/audris/rfBasicModel.RData");
 i=egh
 k=12
 
-zcat $i.map.$k | awk -F\; '{print $2";"$1}' | lsort 50G -t\; -k1,2 | perl -e '$p="";while(<STDIN>){chop();($c,@x)=split(/;/); if ($c ne $p && $p ne ""){ for $i (keys %tmp){ print ";$i"}; print "\n"; %tmp=(); }; $p=$c; $tmp{$p}++;$tmp{$x[0]}++;}' | gzip > egh.map.12.p2p
-zcat egh.map.12.p2p | sed 's|^;||' | perl -ane '$i++;chop ();s/\r//g; @x=split(/;/); for $a (@x){ $a=~ m/([^<]*)<([^>]*)>/; $n=$1;$e=$2;$n=~s/\s*$//;print "$i;$n;$e;$a\n"};' | gzip > forML.gz
+zcat $i.map.$k | awk -F\; '{print $2";"$1}' | lsort 50G -t\; -k1,2 | perl -e '$p="";while(<STDIN>){chop();($c,@x)=split(/;/); if ($c ne $p && $p ne ""){ for $i (keys %tmp){ print ";$i"}; print "\n"; %tmp=(); }; $p=$c; $tmp{$p}++;$tmp{$x[0]}++;}' | gzip > $i.map.12.p2p
+zcat $i.map.12.p2p | sed 's|^;||' | perl -ane '$i++;chop ();s/\r//g; @x=split(/;/); for $a (@x){ $a=~ m/([^<]*)<([^>]*)>/; $n=$1;$e=$2;$n=~s/\s*$//;print "$i;$n;$e;$a\n"};' | gzip > $i.forML.gz
 
 
 library(randomForest)
@@ -84,7 +84,7 @@ library(RecordLinkage)
 load("/home/audris/rfBasicModel.RData")
 
 
-alist = read.table("forML.gz",sep=";",quote="",comment.char="")
+alist = read.table("egh.forML.gz",sep=";",quote="",comment.char="")
 names(alist) = c("cl","n","e","a");
 alist$ln=sub(".* ","",alist$n);
 alist$fn=sub(" .*","",alist$n);
@@ -137,7 +137,7 @@ for (cl in res){
  blocksgg <- data.frame(id=V(gg)$id, block=clustgg$membership)
  for (cc in names(table(blocksgg$block))){
    #pairs$data1[blocksgg$id[blocksgg$block == cc],"a"]
-   write(paste(c(cl,blocksgg$id[blocksgg$block == cc]),collapse=";"), file="/home/audris/rfBasicModel.align.head", append=T);
+   write(paste(c(cl,blocksgg$id[blocksgg$block == cc]),collapse=";"), file="/home/audris/rfBasicModel.align.top", append=T);
  }
 }
 
