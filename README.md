@@ -8,6 +8,8 @@ crossRaterRelibility.clean.txt - Data provided to raters to create labels. Data 
 
 ### Code  
 
+rf_model.r - Script to build random forest models, predict and cross-validate. 
+       Experiments to understand effects of augmenting fingerprint metrics to string similarity.
 
 rf.r - Various debugging/exploratory code used to build random forest models, predict and 
        cross-validate. Also icludes experiments to understand effects of augmenting fingerprint 
@@ -17,8 +19,17 @@ rf.r - Various debugging/exploratory code used to build random forest models, pr
 
 ### Models
 
-#To be uploaded
-rfmodelsFullP7.c.RData - random forest model 
+
+Models can be found at https://drive.google.com/drive/folders/170vwBToJDdBZ6li_ag2vKeqxr2ni03eM?usp=sharing
+
+match2345_pairs.RDS - all pairs feature dataframe  
+
+rfmodels.Rdata -
+
+rfmodelsC.Rdata -
+
+rfmodelsFullP7.c.RData - 
+
 HOMONYM_RFMODELS - Contains all random forest models built using fingerprint (files, projects, text) metrics used for cross validation.
  
 
